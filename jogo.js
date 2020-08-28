@@ -1,10 +1,6 @@
 var canvas = document.getElementById('game-canvas')
 var contexto = canvas.getContext('2d');
 var fruta = CriarFruta();
-var posAntigaX;
-var posAntigaY;
-var posAntePX;
-var posAntePY;
 var dirAtual;
 var GBColorPalette = {
     "Background": "#CADC9F",
@@ -13,34 +9,17 @@ var GBColorPalette = {
     "Light Green": "#8bac0f",
     "Lightest Green": "#9bbc0f"
 }
-var Snake = {
-    comprimentoCobra: 0,
-    espaço: 5,
-    velocidadeX: 0,
-    velocidadeY: 0,
+
+function CriarCobra(posX, posY){
+    var Snake = {
     tamanho: 10,
-    posX: 230,
-    posY: 230,
+    posX: posX,
+    posY: posY,
 
     desenha() {
-        
-        
-        for(var i = 0; i < Snake.comprimentoCobra; i++){
-            contexto.fillStyle = GBColorPalette["Dark Green"];
-            posAntePX = posAntigaX;
-            posAntePY = posAntigaY;
-            contexto.fillRect(posAntePX, posAntePY, Snake.tamanho, Snake.tamanho);
-        }
-
         contexto.fillStyle = GBColorPalette["Dark Green"];
         contexto.fillRect(Snake.posX, Snake.posY, Snake.tamanho, Snake.tamanho);
         
-        posAntigaY = Snake.posY;
-        posAntigaX = Snake.posX;
-    },
-    atualiza() {
-        Snake.posY += Snake.velocidadeY;
-        Snake.posX += Snake.velocidadeX;
     },
     detectarBordas(){
         if (Snake.posY > canvas.height - 10) {
@@ -58,15 +37,53 @@ var Snake = {
         if (Snake.posX < 10) {
             Snake.posX = canvas.width;
         }
-    },
-    detectarColisao(){
-        if(Snake.posX == fruta.posX && Snake.posY == fruta.posY){
-            Snake.comprimentoCobra++;
-            fruta = CriarFruta();
-        }
+    }
     }
 
+    return Snake;
 }
+
+var Cobra = {
+    comprimentoCobra: 1,
+    espaço: 2,
+    velocidadeX: 0,
+    velocidadeY: 0,
+    pedacos: [],
+    inicializacao(){
+        Cobra.pedacos[0] = CriarCobra(250,250);
+    },
+    criarNova(){
+        Cobra.pedacos[Cobra.comprimentoCobra] = CriarCobra(250,250);
+        Cobra.comprimentoCobra++;
+    },
+    desenha(){
+        for(var i = Cobra.comprimentoCobra-1; i > 0; i--){
+            Cobra.pedacos[i].posX = Cobra.pedacos[i-1].posX;
+            Cobra.pedacos[i].posY = Cobra.pedacos[i-1].posY;
+            Cobra.pedacos[i].desenha();
+            Cobra.pedacos[i].detectarBordas();
+        }
+        Cobra.pedacos[0].posX += Cobra.velocidadeX;
+            Cobra.pedacos[0].posY += Cobra.velocidadeY;
+            Cobra.pedacos[0].desenha();
+            Cobra.pedacos[0].detectarBordas();
+            Cobra.detectarColisao();
+    },
+    pegaFruta(){
+        if(Cobra.pedacos[0].posX == fruta.posX && Cobra.pedacos[0].posY == fruta.posY){
+            fruta = CriarFruta();
+            Cobra.criarNova();
+        }
+    },
+    detectarColisao(){
+        for(var i = 1; i < Cobra.comprimentoCobra; i++){
+             if(Cobra.pedacos[0].posX == Cobra.pedacos[i].posX && Cobra.pedacos[0].posY == Cobra.pedacos[i].posY){
+                console.log(`Bateu no ${Cobra.pedacos[i]}`);
+        }}
+    }
+}
+
+
 
 const FUNDO = {
     altura: canvas.height,
@@ -78,17 +95,12 @@ const FUNDO = {
 }
 
 const Titulo = {
-    desenha(){
+    desenha(texto){
         contexto.font = "30px Roboto";
         contexto.fillStyle = "rgba(0,0,0, 0.1)";
         contexto.fillRect(0,0,canvas.width, canvas.height);
         contexto.fillStyle = GBColorPalette["Darkest Green"];
-        contexto.fillText("99 Jogos em 1", canvas.width/2 - contexto.measureText("99 Jogos em 1").width/2, 50);
-        
-        contexto.fillText("Clique pra começar", canvas.width/2 - contexto.measureText("Clique pra começar").width/2, 450); 
-
-        contexto.font = "15px Roboto";
-        contexto.fillText("(Por enquanto só o da cobrinha)", canvas.width/2 - contexto.measureText("(Por enquanto só o da cobrinha)").width/2, 80);
+        contexto.fillText(texto, canvas.width/2 - contexto.measureText(texto).width/2, 50);
     }
 
 }
@@ -99,26 +111,30 @@ const TELAS = {
     TelaInicial: {
         atualiza(){
             FUNDO.desenha();
-            Snake.desenha();
-            Titulo.desenha();
+            Titulo.desenha("Teste - Jogo da Cobrinha");
+            Cobra.inicializacao();
+            Cobra.desenha();
         }
     },
     TelaJogo: {
         atualiza() {
-            
             FUNDO.desenha();
             fruta.desenha();
-            Snake.desenha();
-            Snake.atualiza();
-            Snake.detectarBordas();
-            Snake.detectarColisao();
+            Cobra.desenha();
+            Cobra.pegaFruta();
         }
     },
     TelaPause:{
         atualiza(){
 
         }
-    }
+    },
+    TelaGameOver:{
+        atualiza(){
+            FUNDO.desenha();
+            Titulo.desenha("Fim de Jogo");
+        }
+    },
 };
 
 function CriarFruta(){
@@ -146,11 +162,11 @@ function CriarFruta(){
         fruta.posY = posY;
         fruta.posX = posX;
     }
-}
+    }
 
-fruta.definirposicao();
+    fruta.definirposicao();
 
-return fruta;
+    return fruta;
 }
 
 
@@ -175,20 +191,20 @@ function Andar(e) {
 
     if (e.keyCode == 37 && dirAtual != "direita") {
         dirAtual = "esquerda";
-        Snake.velocidadeX = -10;
-        Snake.velocidadeY = 0;
+        Cobra.velocidadeX = -10;
+        Cobra.velocidadeY = 0;
     } else if (e.keyCode == 38 && dirAtual != "baixo") {
         dirAtual = "cima";
-        Snake.velocidadeX = 0;
-        Snake.velocidadeY = -10;
+        Cobra.velocidadeX = 0;
+        Cobra.velocidadeY = -10;
     } else if (e.keyCode == 39&& dirAtual != "esquerda") {
         dirAtual = "direita";
-        Snake.velocidadeX = 10;
-        Snake.velocidadeY = 0;
+        Cobra.velocidadeX = 10;
+        Cobra.velocidadeY = 0;
     } else if (e.keyCode == 40&& dirAtual != "cima") {
         dirAtual = "baixo";
-        Snake.velocidadeX = 0;
-        Snake.velocidadeY = 10;
+        Cobra.velocidadeX = 0;
+        Cobra.velocidadeY = 10;
     } else if (e.keyCode == 32) {
         if (telaAtual == TELAS.TelaPause) {
             GetTelaAtual(TELAS.TelaJogo);
