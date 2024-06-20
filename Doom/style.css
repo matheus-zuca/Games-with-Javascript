@@ -1,0 +1,10 @@
+h1,
+h2 {
+  font-family: Lato;
+}
+
+.app {
+  width: 100px;
+  height: 100%;
+  background-color: black;
+}
